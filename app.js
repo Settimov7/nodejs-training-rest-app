@@ -4,13 +4,36 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
+const multer = require('multer');
+const uuidv4 = require('uuid/v4')
 
 const feedRoutes = require('./routes/feed');
+
+const fileStorage = multer.diskStorage({
+	destination: (request, file, callback) => {
+		callback(null, 'images');
+	},
+	filename: (request, file, callback) => {
+		callback(null, `${ uuidv4() }-${ file.originalname }`);
+	},
+});
+
+const fileFilter = (request, file, callback) => {
+	if (file.mimetype === 'image/png' || file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg') {
+		callback(null, true);
+	}
+
+	callback(null, false);
+};
 
 const app = express();
 dotenv.config();
 
 app.use(bodyParser.json());
+app.use(multer({
+	storage: fileStorage,
+	fileFilter,
+}).single('image'));
 
 app.use('/images', express.static(path.join(__dirname, 'images')));
 
