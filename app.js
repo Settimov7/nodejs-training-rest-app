@@ -8,6 +8,7 @@ const multer = require('multer');
 const uuidv4 = require('uuid/v4')
 
 const feedRoutes = require('./routes/feed');
+const authRoutes = require('./routes/auth');
 
 const fileStorage = multer.diskStorage({
 	destination: (request, file, callback) => {
@@ -46,14 +47,16 @@ app.use((request, response, next) => {
 });
 
 app.use('/feed', feedRoutes);
+app.use('/auth', authRoutes);
 
 app.use((error, request, response, next) => {
 	console.log(error);
 
-	const { statusCode = 500, message } = error;
+	const { statusCode = 500, message, data } = error;
 
 	response.status(statusCode).json({
 		message,
+		data,
 	})
 });
 
