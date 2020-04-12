@@ -50,3 +50,25 @@ exports.createPost = (request, response, next) => {
 		next(error);
 	});
 };
+
+exports.getPost = (request, response, next) => {
+	const { postId } = request.params;
+
+	Post.findById(postId)
+	.then((post) => {
+		if (!post) {
+			const error = new Error('Could not find post!');
+			error.status(404);
+
+			throw error;
+		}
+
+		response.status(200).json({
+			message: 'Post fetched.',
+			post,
+		});
+	})
+	.catch((error) => {
+		next(error);
+	});
+};
