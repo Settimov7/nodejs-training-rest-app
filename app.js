@@ -24,6 +24,16 @@ app.use((request, response, next) => {
 
 app.use('/feed', feedRoutes);
 
+app.use((error, request, response, next) => {
+	console.log(error);
+
+	const { statusCode = 500, message } = error;
+
+	response.status(statusCode).json({
+		message,
+	})
+});
+
 mongoose.connect(process.env.MONGODB_URI)
 .then(() => {
 	app.listen(8080);

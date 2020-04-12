@@ -19,15 +19,15 @@ exports.getPosts = (request, response) => {
 	})
 };
 
-exports.createPost = (request, response) => {
+exports.createPost = (request, response, next) => {
 	const { title, content } = request.body;
 	const errors = validationResult(request);
 
-	if(!errors.isEmpty()) {
-		return response.status(422).json({
-			message: 'Validation failed, entered data is incorrect',
-			errors: errors.array(),
-		})
+	if (!errors.isEmpty()) {
+		const error = new Error('Validation failed, entered data is incorrect');
+		error.statusCode = 422;
+
+		throw error;
 	}
 
 	const post = Post({
@@ -47,6 +47,6 @@ exports.createPost = (request, response) => {
 		});
 	})
 	.catch((error) => {
-		console.log(error);
+		next(error);
 	});
 };
