@@ -1,3 +1,5 @@
+const path = require('path');
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
@@ -9,6 +11,8 @@ const app = express();
 dotenv.config();
 
 app.use(bodyParser.json());
+
+app.use('/images', express.static(path.join(__dirname, 'images')));
 
 app.use((request, response, next) => {
 	response.setHeader('Access-Control-Allow-Origin', '*');
