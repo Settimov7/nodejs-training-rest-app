@@ -138,6 +138,32 @@ exports.updatePost = (request, response, next) => {
 	});
 };
 
+exports.deletePost = (request, response, next) => {
+	const { postId } = request.params;
+
+	Post.findById(postId)
+	.then((post) => {
+		if (!post) {
+			const error = new Error('Could not find post!');
+			error.status(404);
+
+			throw error;
+		}
+
+		clearImage(post.imageUrl);
+
+		return Post.findByIdAndRemove(postId);
+	})
+	.then(() => {
+		response.status(200).json({
+			message: 'Deleted post.'
+		})
+	})
+	.catch((error) => {
+		next(error);
+	})
+};
+
 const clearImage = (filePath) => {
 	filePath = path.join(__dirname, '..', filePath);
 	fs.unlink(filePath, (error) => {
