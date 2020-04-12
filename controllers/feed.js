@@ -2,16 +2,14 @@ exports.getPosts = (request, response) => {
 	response.status(200).json({
 		posts: [
 			{
+				_id: 'id',
 				title: 'First Post',
 				content: 'This is the first post!',
-			},
-			{
-				title: 'Second Post',
-				content: 'This is the second post!',
-			},
-			{
-				title: 'Third Post',
-				content: 'This is the third post!',
+				imageUrl: 'images/image.jpg',
+				creator: {
+					name: 'Name',
+				},
+				createdAt: new Date(),
 			},
 		]
 	})
@@ -26,6 +24,10 @@ exports.createPost = (request, response) => {
 			id: new Date().toISOString(),
 			title,
 			content,
+			creator: {
+				name: 'Name',
+			},
+			createdAt: new Date(),
 		}
 	});
 };
