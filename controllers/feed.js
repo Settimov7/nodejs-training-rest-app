@@ -196,6 +196,14 @@ exports.deletePost = (request, response, next) => {
 		return Post.findByIdAndRemove(postId);
 	})
 	.then(() => {
+		return User.findById(request.userId);
+	})
+	.then((user) => {
+		user.posts.pull(postId);
+
+		return user.save();
+	})
+	.then(() => {
 		response.status(200).json({
 			message: 'Deleted post.'
 		})
