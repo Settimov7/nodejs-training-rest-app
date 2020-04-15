@@ -128,6 +128,13 @@ exports.updatePost = (request, response, next) => {
 		imageUrl = file.path.replace('\\', '/');
 	}
 
+	if (post.creator.toString() !== request.userId) {
+		const error = new Error('Not authorized!');
+		error.statusCode = 403;
+
+		throw error;
+	}
+
 	if (!imageUrl) {
 		const error = new Error('No file picked.');
 		error.statusCode = 422;
@@ -173,6 +180,13 @@ exports.deletePost = (request, response, next) => {
 		if (!post) {
 			const error = new Error('Could not find post!');
 			error.status(404);
+
+			throw error;
+		}
+
+		if (post.creator.toString() !== request.userId) {
+			const error = new Error('Not authorized!');
+			error.statusCode = 403;
 
 			throw error;
 		}
