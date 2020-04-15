@@ -7,7 +7,7 @@ const User = require('../models/user');
 
 dotenv.config();
 
-exports.signup = (request, response, next) => {
+exports.signup = async (request, response, next) => {
 	const errors = validationResult(request);
 
 	if (!errors.isEmpty()) {
@@ -20,58 +20,52 @@ exports.signup = (request, response, next) => {
 
 	const { email, name, password } = request.body;
 
-	bcrypt.hash(password, 12)
-	.then((password) => {
+	try {
+		const hashedPassword = await bcrypt.hash(password, 12);
 		const user = new User({
 			email,
-			password,
+			password: hashedPassword,
 			name,
 		});
 
-		return user.save();
-	})
-	.then((user) => {
+		await user.save();
+
 		response.status(201).json({
 			message: 'User created!',
 			userId: user._id,
 		});
-	})
-	.catch((error) => {
+	} catch (error) {
 		next(error);
-	})
+	}
 };
 
-exports.login = (request, response, next) => {
+exports.login = async (request, response, next) => {
 	const { email, password } = request.body;
-	let currentUser;
 
-	User.findOne({ email })
-	.then((user) => {
+	try {
+		const user = await User.findOne({ email });
+
 		if (!user) {
 			const error = new Error('A user with this email could not be found.');
 			error.statusCode = 401;
 
-			throw error;
+			return next(error);
 		}
 
-		currentUser = user;
+		const isEqual = await bcrypt.compare(password, user.password);
 
-		return bcrypt.compare(password, user.password);
-	})
-	.then((isEqual) => {
 		if (!isEqual) {
 			const error = new Error('Wrong password.');
 			error.statusCode = 401;
 
-			throw error;
+			return next(error);
 		}
 
-		const { _id, email } = currentUser;
-		const userId = _id.toString();
+		const userId = user._id.toString();
 		const token = jwt.sign(
 			{
-				email,
-				userId,
+				email: user.email,
+				userId: user._id,
 			},
 			process.env.SECRET_KEY,
 			{
@@ -80,34 +74,33 @@ exports.login = (request, response, next) => {
 		);
 
 		response.status(200).json({ token, userId })
-	})
-	.catch((error) => {
+	} catch (error) {
 		next(error);
-	})
+	}
 };
 
-exports.getUserStatus = (request, response, next) => {
+exports.getUserStatus = async (request, response, next) => {
 	const { userId } = request;
 
-	User.findById(userId)
-	.then((user) => {
+	try {
+		const user = await User.findById(userId);
+
 		if (!user) {
 			const error = new Error('User not found');
 			error.statusCode = 404;
 
-			throw error;
+			return next(error);
 		}
 
 		response.status(200).json({
 			status: user.status,
 		});
-	})
-	.catch((error) => {
+	} catch (error) {
 		next(error);
-	})
+	}
 };
 
-exports.updateUserStatus =(request, response, next) => {
+exports.updateUserStatus = async (request, response, next) => {
 	const { userId, body } = request;
 	const { status } = body;
 
@@ -121,26 +114,25 @@ exports.updateUserStatus =(request, response, next) => {
 		throw error;
 	}
 
-	User.findById(userId)
-	.then((user) => {
+	try {
+		const user = await User.findById(userId);
+
 		if (!user) {
 			const error = new Error('User not found');
 			error.statusCode = 404;
 
-			throw error;
+			return next(error);
 		}
 
 		user.status = status;
 
-		return user.save();
-	})
-	.then(() => {
+		await user.save();
+
 		response.status(200).json({
 			message: 'Status updated.',
 			status,
 		});
-	})
-	.catch((error) => {
+	} catch (error) {
 		next(error);
-	})
+	}
 };

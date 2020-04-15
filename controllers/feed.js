@@ -6,32 +6,25 @@ const { validationResult } = require('express-validator/check');
 const Post = require('../models/post');
 const User = require('../models/user');
 
-exports.getPosts = (request, response, next) => {
+exports.getPosts = async (request, response, next) => {
 	const { page = 1 } = request.query;
 	const perPage = 2;
-	let totalItems;
 
-	Post.find().countDocuments()
-	.then((count) => {
-		totalItems = count;
+	try {
+		const count = await Post.find().countDocuments();
+		const posts = await Post.find().populate('creator').skip((page - 1) * perPage).limit(perPage);
 
-		return Post.find()
-		.skip((page - 1) * perPage)
-		.limit(perPage);
-	})
-	.then((posts) => {
 		response.status(200).json({
 			message: 'Fetched posts successfully.',
 			posts,
-			totalItems,
+			count,
 		});
-	})
-	.catch((error) => {
+	} catch (error) {
 		next(error);
-	});
+	}
 };
 
-exports.createPost = (request, response, next) => {
+exports.createPost = async (request, response, next) => {
 	const errors = validationResult(request);
 
 	if (!errors.isEmpty()) {
@@ -51,7 +44,6 @@ exports.createPost = (request, response, next) => {
 	const { title, content } = request.body;
 	const { file, userId } = request;
 	const imageUrl = file.path.replace('\\', '/');
-	let creator;
 	const post = Post({
 		title,
 		imageUrl,
@@ -59,57 +51,50 @@ exports.createPost = (request, response, next) => {
 		creator: userId,
 	});
 
-	post.save()
-	.then((post) => {
-		return User.findById(userId);
-	})
-	.then((user) => {
-		creator = user;
+	try {
+		await post.save();
 
-		console.log(user);
+		const user = await User.findById(userId);
 
 		user.posts.push(post);
+		await user.save();
 
-		return user.save();
-	})
-	.then(() => {
 		response.status(201).json({
 			message: 'Post created successfully',
 			post,
 			creator: {
-				_id: creator._id,
-				name: creator.name,
+				_id: user._id,
+				name: user.name,
 			},
 		});
-	})
-	.catch((error) => {
+	} catch (error) {
 		next(error);
-	});
+	}
 };
 
-exports.getPost = (request, response, next) => {
+exports.getPost = async (request, response, next) => {
 	const { postId } = request.params;
 
-	Post.findById(postId)
-	.then((post) => {
+	try {
+		const post = await Post.findById(postId);
+
 		if (!post) {
 			const error = new Error('Could not find post!');
 			error.status(404);
 
-			throw error;
+			return next(error);
 		}
 
 		response.status(200).json({
 			message: 'Post fetched.',
 			post,
 		});
-	})
-	.catch((error) => {
+	} catch (error) {
 		next(error);
-	});
+	}
 };
 
-exports.updatePost = (request, response, next) => {
+exports.updatePost = async (request, response, next) => {
 	const errors = validationResult(request);
 
 	if (!errors.isEmpty()) {
@@ -122,18 +107,7 @@ exports.updatePost = (request, response, next) => {
 	const { params, body, file } = request;
 	const { postId } = params;
 	const { title, content, image } = body;
-	let imageUrl = image;
-
-	if (request.file) {
-		imageUrl = file.path.replace('\\', '/');
-	}
-
-	if (post.creator.toString() !== request.userId) {
-		const error = new Error('Not authorized!');
-		error.statusCode = 403;
-
-		throw error;
-	}
+	const imageUrl = request.file ? file.path.replace('\\', '/') : image;
 
 	if (!imageUrl) {
 		const error = new Error('No file picked.');
@@ -142,13 +116,21 @@ exports.updatePost = (request, response, next) => {
 		throw error;
 	}
 
-	Post.findById(postId)
-	.then((post) => {
+	try {
+		const post = await Post.findById(postId);
+
 		if (!post) {
 			const error = new Error('Could not find post!');
 			error.status(404);
 
-			throw error;
+			return next(error);
+		}
+
+		if (post.creator.toString() !== request.userId) {
+			const error = new Error('Not authorized!');
+			error.statusCode = 403;
+
+			return next(error);
 		}
 
 		if (imageUrl !== post.imageUrl) {
@@ -159,58 +141,53 @@ exports.updatePost = (request, response, next) => {
 		post.imageUrl = imageUrl;
 		post.content = content;
 
-		return post.save();
-	})
-	.then((post) => {
+		await post.save();
+
 		response.status(200).json({
 			message: 'Post updated!',
 			post,
 		})
-	})
-	.catch((error) => {
+	} catch (error) {
 		next(error);
-	});
+	}
 };
 
-exports.deletePost = (request, response, next) => {
+exports.deletePost = async (request, response, next) => {
 	const { postId } = request.params;
 
-	Post.findById(postId)
-	.then((post) => {
+	try {
+		const post = await Post.findById(postId);
+
 		if (!post) {
 			const error = new Error('Could not find post!');
 			error.status(404);
 
-			throw error;
+			return next(error);
 		}
 
 		if (post.creator.toString() !== request.userId) {
 			const error = new Error('Not authorized!');
 			error.statusCode = 403;
 
-			throw error;
+			return next(error);
 		}
 
 		clearImage(post.imageUrl);
 
-		return Post.findByIdAndRemove(postId);
-	})
-	.then(() => {
-		return User.findById(request.userId);
-	})
-	.then((user) => {
+		await Post.findByIdAndRemove(postId);
+
+		const user = await User.findById(request.userId);
+
 		user.posts.pull(postId);
 
-		return user.save();
-	})
-	.then(() => {
+		await user.save();
+
 		response.status(200).json({
 			message: 'Deleted post.'
 		})
-	})
-	.catch((error) => {
+	} catch (error) {
 		next(error);
-	})
+	}
 };
 
 const clearImage = (filePath) => {
