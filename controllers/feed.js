@@ -13,7 +13,11 @@ exports.getPosts = async (request, response, next) => {
 
 	try {
 		const count = await Post.find().countDocuments();
-		const posts = await Post.find().populate('creator').skip((page - 1) * perPage).limit(perPage);
+		const posts = await Post.find()
+		.populate('creator')
+		.sort({ createdAt: -1 })
+		.skip((page - 1) * perPage)
+		.limit(perPage);
 
 		response.status(200).json({
 			message: 'Fetched posts successfully.',
