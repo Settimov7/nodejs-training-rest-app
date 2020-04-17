@@ -7,9 +7,6 @@ const mongoose = require('mongoose');
 const multer = require('multer');
 const uuidv4 = require('uuid/v4')
 
-const feedRoutes = require('./routes/feed');
-const authRoutes = require('./routes/auth');
-
 const fileStorage = multer.diskStorage({
 	destination: (request, file, callback) => {
 		callback(null, 'images');
@@ -46,9 +43,6 @@ app.use((request, response, next) => {
 	next();
 });
 
-app.use('/feed', feedRoutes);
-app.use('/auth', authRoutes);
-
 app.use((error, request, response, next) => {
 	console.log(error);
 
@@ -62,12 +56,7 @@ app.use((error, request, response, next) => {
 
 mongoose.connect(process.env.MONGODB_URI)
 .then(() => {
-	const server = app.listen(8080);
-	const io = require('./socket').init(server);
-
-	io.on('connection', (socket) => {
-		console.log('Client connected')
-	})
+	app.listen(8080);
 })
 .catch((error) => {
 	console.log(error);
