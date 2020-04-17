@@ -17,14 +17,19 @@ module.exports = {
 			});
 		}
 
-		if (validator.isEmpty(password) || validator.isLength(password, { min: 5 })) {
+		if (validator.isEmpty(password) || !validator.isLength(password, { min: 5 })) {
 			errors.push({
 				message: 'Password too short!',
 			});
 		}
 
 		if (errors.length > 0) {
-			throw new Error('Invalid input.')
+			const error = new Error('Invalid input.');
+
+			error.data = errors;
+			error.code = 422;
+
+			throw error;
 		}
 
 		const existingUser = await User.findOne({ email });
