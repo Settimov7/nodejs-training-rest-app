@@ -6,6 +6,10 @@ const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const multer = require('multer');
 const uuidv4 = require('uuid/v4')
+const graphqlHttp = require('express-graphql');
+
+const graphQLSchema = require('./graphql/schema');
+const graphQLResolver = require('./graphql/resolvers');
 
 const fileStorage = multer.diskStorage({
 	destination: (request, file, callback) => {
@@ -42,6 +46,12 @@ app.use((request, response, next) => {
 
 	next();
 });
+
+app.use('/graphql', graphqlHttp({
+	schema: graphQLSchema,
+	rootValue: graphQLResolver,
+	graphiql: true,
+}))
 
 app.use((error, request, response, next) => {
 	console.log(error);
