@@ -21,7 +21,8 @@
     "mongoose": "^5.9.7",
     "multer": "^1.4.2",
     "socket.io": "^2.3.0",
-    "uuid": "^7.0.3"
+    "uuid": "^7.0.3",
+    "validator": "^13.0.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.3"
