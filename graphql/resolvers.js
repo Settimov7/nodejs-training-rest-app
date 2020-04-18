@@ -323,4 +323,29 @@ module.exports = {
 
 		return true
 	},
+
+	user: async (_, request) => {
+		if (!request.isAuth) {
+			const error = new Error('Not authenticated!');
+
+			error.code = 401;
+
+			throw error;
+		}
+
+		const user = await User.findById(request.userId);
+
+		if (!user) {
+			const error = new Error('No user found');
+
+			error.code = 404;
+
+			throw error;
+		}
+
+		return {
+			...user._doc,
+			_id: user._id.toString(),
+		}
+	},
 }
