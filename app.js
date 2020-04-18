@@ -1,4 +1,3 @@
-const fs = require('fs');
 const path = require('path');
 
 const express = require('express');
@@ -13,6 +12,7 @@ const graphQLSchema = require('./graphql/schema');
 const graphQLResolver = require('./graphql/resolvers');
 
 const auth = require('./middleware/auth');
+const { clearImage } = require('./util/file');
 
 const fileStorage = multer.diskStorage({
 	destination: (request, file, callback) => {
@@ -56,7 +56,7 @@ app.use((request, response, next) => {
 
 app.use(auth);
 
-app.put('/post-image', (request, response, next) => {
+app.put('/post-image', (request, response) => {
 	if (!request.isAuth) {
 		throw new Error('Not authenticated!');
 	}
@@ -98,7 +98,7 @@ app.use('/graphql', graphqlHttp({
 	},
 }));
 
-app.use((error, request, response, next) => {
+app.use((error, request, response) => {
 	console.log(error);
 
 	const { statusCode = 500, message, data } = error;
@@ -116,10 +116,3 @@ mongoose.connect(process.env.MONGODB_URI)
 .catch((error) => {
 	console.log(error);
 });
-
-const clearImage = (filePath) => {
-	filePath = path.join(__dirname, '..', filePath);
-	fs.unlink(filePath, (error) => {
-		console.log(error);
-	})
-};
